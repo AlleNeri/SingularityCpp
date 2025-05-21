@@ -1,0 +1,29 @@
+Bootstrap:docker
+From: ubuntu:22.04
+
+%labels
+	Author: AlleNeri
+
+%post
+	apt-get update && apt-get install -y \
+		build-essential \
+		cmake \
+		git \
+		&& rm -rf 
+
+	# create build directory
+	mkdir -p /opt/app/build
+
+%files
+. /opt/app
+
+%environment
+	export PATH=/opt/app/build:$PATH
+
+%post
+	cd /opt/app/build
+	cmake ..
+	make
+
+%runscript
+	exec /opt/app/build/CMakeHelloWorld

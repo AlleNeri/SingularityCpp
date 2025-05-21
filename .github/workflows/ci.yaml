@@ -1,0 +1,62 @@
+name: Build and Run Singularity Container
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-run:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Install dependencies for Singularity
+      run: |
+        sudo apt-get update && sudo apt-get install -y \
+          build-essential \
+          libssl-dev \
+          uuid-dev \
+          libgpgme11-dev \
+          squashfs-tools \
+          libseccomp-dev \
+          wget \
+          pkg-config \
+          git \
+          cryptsetup
+
+    - name: Install Go
+      run: |
+        wget https://dl.google.com/go/go1.20.5.linux-amd64.tar.gz
+        sudo tar -C /usr/local -xzf go1.20.5.linux-amd64.tar.gz
+        echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
+        source ~/.bashrc
+
+    - name: setup Env for GO
+      run: echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc && source ~/.bashrc
+
+    - name: Install Singularity
+      run: |
+        export VERSION=3.8.7 && # adjust this as necessary \
+        wget https://github.com/hpcng/singularity/releases/download/v${VERSION}/singularity-${VERSION}.tar.gz \
+        && sudo tar -xzf singularity-${VERSION}.tar.gz \
+        && cd singularity-${VERSION} \
+        && sudo ./mconfig \
+        && sudo make -C builddir \
+        && sudo make -C builddir install
+
+    - name : verifyVersion
+      run: singularity --version
+  
+    - name: Build Singularity Image
+      run: |
+        sudo singularity build hello-world.sif Singularity.def
+
+    - name: Run Application in Singularity
+      run: |
+        singularity run hello-world.sif
